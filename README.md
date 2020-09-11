@@ -282,7 +282,21 @@ git add .; git commit -m "testing: workflow"; git push origin feature/workflow
 
 ## Step 14: Add sonarcloud workflow
 
-- Open the sonarcloud web, access 
+- Open the sonarcloud web, access :
+
+```shell
+My Projects -> Analyze new project, Choose an organization on Github.
+```
+
+- Set the project key and Set setup your repository.
+
+- Turn off automatic analysis
+
+```shell
+Administration -> Analysis Method -> disable Sonarcloud Automatic analysis
+```
+
+- Then generate a token.
 
 ```shell
 My Account -> Security -> Generate Tokens
@@ -296,7 +310,15 @@ Repo main page -> Settings -> Secrets
 
 - And create the SONAR_TOKEN with the value of generated token.
 
-Append to the main.yml
+- Register the branch feature/workflow
+
+```shell
+Project -> Administration -> Branches & Pull Request
+
+(feature\/workflow)
+```
+
+- Append to the main.yml
 
 ```yml
   sonarCloudTrigger:
@@ -319,35 +341,20 @@ Append to the main.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=PROJECT_KEY
+            -Dsonar.organization=ORGANIZATION_KEY
+            -Dsonar.projectName=trivia-numbers
+            -Dsonar.projectVersion=1.0
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/*_test.go,**/vendor/**,**/testdata/*,numbers-fe/**,numbers-be/**
+            -Dsonar.tests=.
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.go.coverage.reportPaths=/github/workspace/bin/cov.out
+            -Dsonar.go.tests.reportPaths=/github/workspace/bin/report.json
 ```
-
-- Open your sonarcloud page, access the
-
-```shell
-My Projects -> Analyze new Project -> Create Project Manually -> Create Another organization -> Create an Organization manually -> Free Plan
-```
-
-- Also input the Project Key
-
-- Then sonar-project.properties file
-
-```yml
-sonar.projectKey=PROJECT_KEY
-sonar.organization=PROJECT_ORGANIZATION
-
-# This is the name and version displayed in the SonarCloud UI.
-sonar.projectName=trivia-numbers
-sonar.projectVersion=1.0
-
-# Path is relative to the sonar-project.properties file. Replace "\" by "/" on Windows.
-sonar.sources=.
-sonar.exclusions=**/*_test.go,**/vendor/**,**/testdata/*,numbers-fe/**,numbers-be/**
-
-sonar.tests=.
-sonar.test.inclusions=**/*_test.go
-sonar.go.coverage.reportPaths=/github/workspace/bin/cov.out
-sonar.go.tests.reportPaths=/github/workspace/bin/report.json
-```
+- Test push the git
 
 ## Step 15: Test add another function to api.go
 
@@ -382,3 +389,92 @@ func HoroscopeHandler(ctx echo.Context) error {
 - Push the changes.
 
 ## Step 16: Try the PR
+
+- Try remove the function above.
+
+- Merge the PR.
+
+## Step 17: Add Dockerfile for numbers-be
+
+```dockerfile
+FROM golang:1.13 AS builder
+
+LABEL maintainer="faldy.findraddy@gmail.com"
+
+# Always set workdir into application root
+WORKDIR /app
+
+# Copy the source code into container for compiling
+COPY . /app/
+
+# Compile the binary
+RUN go get -v -d .
+RUN go build main.go
+
+CMD ["/app/main"]
+```
+
+## Step 18: Copy the numbers-fe to your root directory
+
+## Step 19: Create 2 heroku app
+
+```shell
+New -> Create new app.
+```
+
+- Copy the API key.
+
+```shell
+Profile -> Account settings -> Reveal API Key.
+```
+
+- Create Github secret for heroku
+
+```shell
+HEROKU_API_KEY
+```
+
+## Step 20: Create the deploy.yml
+
+```yml
+name: Deploy
+
+on:
+  push:
+    # branches:
+    #   - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.4.6 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "YOUR_APP_NAME" #Must be unique in Heroku
+          heroku_email: "YOUR_EMAIL"
+          appdir: "numbers-be"
+          usedocker: true
+      - uses: akhileshns/heroku-deploy@v3.4.6 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "YOUR_APP_NAME" #Must be unique in Heroku
+          heroku_email: "YOUR_EMAIL"
+          appdir: "numbers-fe"
+          usedocker: true
+```
+
+## Step 21: Edit your numbers-fe client-side request.
+
+```shell
+edit numbers-fe/scr/App.js
+```
+
+## Step 22: Try push your app
+
+- See the heroku logs.
+
+- If everythings OK, enable the only branch master on deploy.yml
+
+- Test your App.
