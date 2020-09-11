@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	"github.com/faldyfind/trivia-numbers/api"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
