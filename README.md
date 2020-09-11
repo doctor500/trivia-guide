@@ -166,7 +166,7 @@ func main() {
 
 ```shell
 cd numbers-be
-PORT=5000 go run numbers-be/main.go
+PORT=5000 go run main.go
 ```
 
 ## Step 8: Try run the unit test
